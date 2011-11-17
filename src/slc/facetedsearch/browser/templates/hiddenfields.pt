@@ -1,0 +1,14 @@
+<input type="hidden" name="facet" value="true" />
+<input type="hidden" name="facet.field"
+       tal:repeat="facet options/facets"
+       tal:attributes="value facet" />
+<input type="hidden" name="facet.range"
+       tal:repeat="facet options/ranges"
+       tal:attributes="value facet" />
+<input type="hidden" name="facet.range.gap" value="+7DAYS">
+<input type="hidden" name="facet.range.end" value="NOW/DAY">
+<input type="hidden" name="facet.range.start" value="NOW/DAY-6MONTHS">
+<input type="hidden" name="facet.range.other" value="all">
+<input type="hidden" name="fq"
+       tal:repeat="fq options/queries"
+       tal:attributes="value fq" />

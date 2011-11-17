@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="slc">
+
+  <browser:page
+      for="OFS.interfaces.IFolder"
+      name="search-facets"
+      template="browser/templates/facets.pt"
+      class=".browser.facets.SearchFacetsView"
+      permission="zope2.View" />
+
+</configure>

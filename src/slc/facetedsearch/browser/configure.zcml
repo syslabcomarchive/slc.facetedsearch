@@ -1,0 +1,21 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="slc">
+
+  <include package="Products.CMFCore" file="permissions.zcml" />
+
+  <browser:resourceDirectory
+      name="slc.facetedsearch.resources"
+      directory="resources"
+      layer=".interfaces.IThemeSpecific"
+      />
+
+  <browser:viewlet
+      name="plone.searchbox"
+      manager="plone.app.layout.viewlets.interfaces.IPortalHeader"
+      class=".facets.SearchBox"
+      layer=".interfaces.IThemeSpecific"
+      permission="zope2.View" />
+
+</configure>

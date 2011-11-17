@@ -1,0 +1,6 @@
+.invisible {
+    display: none;
+}
+.ui-slider-scale li span.ui-slider-label-show {
+    width: 100px;
+}

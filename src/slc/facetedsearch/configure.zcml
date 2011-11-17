@@ -1,0 +1,25 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:cmf="http://namespaces.zope.org/cmf"
+    xmlns:five="http://namespaces.zope.org/five"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="slc">
+
+  <five:registerPackage package="." />
+
+  <include package="collective.solr" />
+
+  <include package=".browser" />
+
+  <genericsetup:registerProfile
+      name="default"
+      title="slc.facetedsearch"
+      directory="profiles/default"
+      description='A collective.solr based faceted search'
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+</configure>
