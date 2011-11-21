@@ -23,7 +23,7 @@
               <div class="submenu-content">
                 <tal:repeat repeat="item submenu/content">
                     <div class="submenu-lvl2"
-                         tal:condition="python:item['count']>0 or view.showSubmenu(item['content'])">
+                         tal:condition="python:item['count']>=0 or view.showSubmenu(item['content'])">
                       <div class="submenu_title empty"
                            tal:attributes="id python:'sub-' + item['id'].replace(':','-').replace('.','_');
                                            class python:'submenu_title' + (not item['content'] and ' empty' or '');">

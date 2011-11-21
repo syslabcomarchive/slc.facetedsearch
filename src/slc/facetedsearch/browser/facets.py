@@ -137,21 +137,21 @@ class SearchFacetsView(BrowserView, FacetMixin):
             if IVocabulary.providedBy(voc):
                 self.vocDict[field] = (voc.Title(), voc.getVocabularyDict(context))
             elif hasattr(self.results, 'facet_counts'): # we don't have a matching vocabulary, so we fake one
-                before = after = 0
+                before = after = -1
                 if field in self.results.facet_counts['facet_fields']:
                     container = self.results.facet_counts['facet_fields'][field]
                 elif field in self.results.facet_counts['facet_ranges']:
                     container = self.results.facet_counts['facet_ranges'][field]['counts']
-                    before = self.results.facet_counts['facet_ranges'][field].get('before', 0)
-                    after = self.results.facet_counts['facet_ranges'][field].get('after', 0)
+                    before = self.results.facet_counts['facet_ranges'][field].get('before', -1)
+                    after = self.results.facet_counts['facet_ranges'][field].get('after', -1)
                 else:
                     continue
                 content = dict()
-                if before:
+                if before >= 0:
                     content[DATE_LOWERBOUND] = ('Before', None)
                 for value in container:
                     content[value] = (self.getDisplayValue(value), None)
-                if after:
+                if after >= 0:
                     content[DATE_UPPERBOUND] = ('After', None)
                 self.vocDict[field] = (self.getDisplayValue(field), content)
         return super(SearchFacetsView, self).__call__(*args, **kw)

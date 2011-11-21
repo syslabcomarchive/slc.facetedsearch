@@ -103,9 +103,20 @@ jq(document).ready(function() {
             jq(element).children('.submenu_more').show();
         }
     });
-    jq('#browsing-menu input[type=checkbox]').click(function() {
-        jq('#browsing-menu').submit();
-    });
+    function update() {
+        //jq('#browsing-menu').submit();
+        jq.post(String(document.location).replace(/\?.*/i, ''), 
+                       jq('#browsing-menu').serializeArray(), 
+                       function (data, textStatus, jqXHR) {
+                            respdom = jq(jqXHR.response);
+                            jq('#content-core').replaceWith(respdom.find('#content-core'));
+                            jq('.documentFirstHeading').replaceWith(respdom.find('.documentFirstHeading'));
+                       });
+    };
+
+    //jq('#browsing-menu .ui-slider-handle').mouseup(function () {alert('update')});
+    jq('#browsing-menu input[type=checkbox]').click(function () {update()} );
+
     // get ourselves some fancy sliders
     jq('fieldset.submenu:has(select.facet_range)').each(function(index, element) {
         jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text' }).hide();
