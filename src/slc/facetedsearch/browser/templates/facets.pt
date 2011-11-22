@@ -37,7 +37,7 @@
                           <tal:title tal:replace="item/title"/>
                         </label>
                         <span>
-                          <tal:count tal:condition="item/count" tal:replace="string:(${item/count})" />
+                          <tal:count tal:replace="string:(${item/count})" />
                         </span>
 
                       </div>

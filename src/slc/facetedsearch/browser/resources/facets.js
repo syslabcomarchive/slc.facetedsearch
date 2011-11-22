@@ -103,23 +103,50 @@ jq(document).ready(function() {
             jq(element).children('.submenu_more').show();
         }
     });
+    loading = document.createElement('span');
+    loading.id = 'loading';
+    loading.innerHtml = 'Loading...';
+    // do an ajax update
     function update() {
         //jq('#browsing-menu').submit();
+        jq('#content-core').children().hide().prepend(jq(loading));
+        
         jq.post(String(document.location).replace(/\?.*/i, ''), 
                        jq('#browsing-menu').serializeArray(), 
                        function (data, textStatus, jqXHR) {
                             respdom = jq(jqXHR.response);
-                            jq('#content-core').replaceWith(respdom.find('#content-core'));
-                            jq('.documentFirstHeading').replaceWith(respdom.find('.documentFirstHeading'));
+                            new_content_core = respdom.find('#content-core');
+                            new_firstHeading = respdom.find('.documentFirstHeading');
+                            if (new_content_core.length > 0) {
+                                jq('#content-core').replaceWith(new_content_core);
+                            } else {
+                                jq('#content-core #loading').remove();
+                                //jq('#content-core').children().show();
+                            }
+                            if (new_firstHeading.length > 0) {
+                                jq('.documentFirstHeading').replaceWith(new_firstHeading);
+                            } else {
+                                jq('.documentFirstHeading').html('...');
+                            }
+                                
                        });
     };
 
-    //jq('#browsing-menu .ui-slider-handle').mouseup(function () {alert('update')});
-    jq('#browsing-menu input[type=checkbox]').click(function () {update()} );
+    // replace the submit button with an ajax update button
+    newbut = document.createElement('input');
+    newbut.type = 'button';
+    newbut.value = jq('#browsing-menu input[type=submit]').attr('value');
+    jq('#browsing-menu input[type=submit]').replaceWith(newbut);
+    jq(newbut).click(function () {update()} );
 
     // get ourselves some fancy sliders
     jq('fieldset.submenu:has(select.facet_range)').each(function(index, element) {
         jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text' }).hide();
     });
+
+    // do an ajax update when a form element is changed
+    jq('#browsing-menu input[type=checkbox]').click(function () { update() } );
+    jq('#browsing-menu .ui-slider-handle').click(function() { update(); });
+
 });
 
