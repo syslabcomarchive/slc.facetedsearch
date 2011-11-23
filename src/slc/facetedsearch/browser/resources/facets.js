@@ -49,6 +49,8 @@ toggler: toggler
             };
 }());
 
+var clicked_slider_handle = false;
+
 jq(document).ready(function() {
         jq('.submenu_content').not('.open').hide('fast');
         jq('.submenu_title').not('.empty').click(function (e) {
@@ -128,7 +130,6 @@ jq(document).ready(function() {
                             } else {
                                 jq('.documentFirstHeading').html('...');
                             }
-                                
                        });
     };
 
@@ -141,12 +142,30 @@ jq(document).ready(function() {
 
     // get ourselves some fancy sliders
     jq('fieldset.submenu:has(select.facet_range)').each(function(index, element) {
-        jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text' }).hide();
+        jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text', labels: 7 }).hide();
     });
 
     // do an ajax update when a form element is changed
     jq('#browsing-menu input[type=checkbox]').click(function () { update() } );
-    jq('#browsing-menu .ui-slider-handle').click(function() { update(); });
+    jq('#browsing-menu .ui-slider, #browsing-menu .ui-slider-range').mouseup(function () {
+        if (!clicked_slider_handle) {
+            console.log('Clicked slider');
+            update();
+        }
+    });
+    // a little more difficult for the sliders handles because the mouse might
+    // leave the handle area before button is released
+    jq('#browsing-menu .ui-slider-handle').click(function() {
+        update();
+        clicked_slider_handle = false;
+    });
+    jq('#browsing-menu .ui-slider-handle').mousedown(function() { clicked_slider_handle = true; });
+    jq('body').mouseup(function() {
+        if (clicked_slider_handle) {
+            update();
+            clicked_slider_handle = false;
+        }
+    });
 
 });
 
