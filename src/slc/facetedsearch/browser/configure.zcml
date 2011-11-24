@@ -8,14 +8,23 @@
   <browser:resourceDirectory
       name="slc.facetedsearch.resources"
       directory="resources"
-      layer=".interfaces.IThemeSpecific"
+      layer="..interfaces.IProductLayer"
       />
 
   <browser:viewlet
       name="plone.searchbox"
       manager="plone.app.layout.viewlets.interfaces.IPortalHeader"
       class=".facets.SearchBox"
-      layer=".interfaces.IThemeSpecific"
+      layer="..interfaces.IProductLayer"
+      permission="zope2.View" />
+
+
+  <browser:page
+      for="OFS.interfaces.IFolder"
+      name="search-facets"
+      template="templates/facets.pt"
+      class=".facets.SearchFacetsView"
+      layer="..interfaces.IProductLayer"
       permission="zope2.View" />
 
 </configure>
