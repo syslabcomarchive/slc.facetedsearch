@@ -1,22 +1,18 @@
-from copy import deepcopy
-from operator import itemgetter
-from string import strip
-from urllib import urlencode
-from ZTUtils import make_query, make_hidden_input
-from DateTime import DateTime
 from logging import getLogger
+from copy import deepcopy
+from string import strip
+from ZTUtils import make_hidden_input
+from DateTime import DateTime
+from DateTime.interfaces import TimeError
 
+from zope.component import queryUtility
 from plone.app.layout.viewlets.common import SearchBoxViewlet
+
+from Products.Archetypes.interfaces import IVocabulary
 from Products.CMFCore.utils import getToolByName
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
-from Products.Archetypes.utils import OrderedDict
-from Products.Archetypes.interfaces import IVocabulary
-from zope.component import getUtility, queryUtility
-from zope.i18n import translate
-from zope.i18nmessageid import Message
 
-from collective.solr.interfaces import IFacetTitleVocabularyFactory
 from collective.solr.interfaces import ISolrConnectionConfig
 
 logger = getLogger('collective.solr.facets')
@@ -63,7 +59,9 @@ def facetParameters(context, request):
         if ':' in field:
             facet, dep = map(strip, field['name'].split(':', 1))
             dependencies[facet] = map(strip, dep.split(','))
-    return dict(fields=tuple(fields) + tuple(ranges), types=types, dependencies=dependencies)
+    return dict(fields=tuple(fields) + tuple(ranges), 
+                types=types, 
+                dependencies=dependencies)
 
 
 
@@ -135,8 +133,9 @@ class SearchFacetsView(BrowserView, FacetMixin):
         for field in self.facet_fields:
             voc = voctool.getVocabularyByName(field)
             if IVocabulary.providedBy(voc):
-                self.vocDict[field] = (voc.Title(), voc.getVocabularyDict(context))
-            elif hasattr(self.results, 'facet_counts'): # we don't have a matching vocabulary, so we fake one
+                self.vocDict[field] = (voc.Title(), voc.getVocabularyDict(self.context))
+            elif hasattr(self.results, 'facet_counts'): 
+                # we don't have a matching vocabulary, so we fake one
                 before = after = -1
                 if field in self.results.facet_counts['facet_fields']:
                     container = self.results.facet_counts['facet_fields'][field]
@@ -162,6 +161,8 @@ class SearchFacetsView(BrowserView, FacetMixin):
             return datetime.strftime('%d.%m.%Y')
         except DateTime.SyntaxError:
             # so it's not a date, let's return it as-is for now
+            return value
+        except TimeError:
             return value
 
     def getResults(self):
@@ -211,7 +212,13 @@ class SearchFacetsView(BrowserView, FacetMixin):
                 if vocab_sub:
                     title_sub = vocab_sub[0]
                     vocab_sub = vocab_sub[1]
-                submenu = self.getMenu(id=term, title=title_sub, vocab=vocab_sub, counts=counts_sub, parent=id, facettype=facettype)
+                submenu = self.getMenu(
+                                    id=term, 
+                                    title=title_sub, 
+                                    vocab=vocab_sub, 
+                                    counts=counts_sub, 
+                                    parent=id, 
+                                    facettype=facettype)
                 menu.append(submenu)
             if isrange:
                 menu = self.sortrange(menu)
@@ -231,7 +238,15 @@ class SearchFacetsView(BrowserView, FacetMixin):
             selected = self.request.form.get(parent, None) == id
             selected_from = False
             selected_to = False
-        return dict(id=id, title=title, isrange=isrange, isstandard=isstandard, selected=selected, selected_from=selected_from, selected_to=selected_to, count=count, content=menu)
+        return dict(id=id, 
+                    title=title, 
+                    isrange=isrange, 
+                    isstandard=isstandard, 
+                    selected=selected, 
+                    selected_from=selected_from, 
+                    selected_to=selected_to, 
+                    count=count, 
+                    content=menu)
 
     def showSubmenu(self, submenu):
         """Returns True if submenu has an entry with query or clearquery set,
