@@ -75,8 +75,8 @@
                tal:condition="submenu/isrange">
                  <tal:fromto repeat="fromto python:['from', 'to']">
                     <select class="submenu-content facet_range" 
-                        tal:attributes="name python:submenu['title'] + '.query:record:list';
-                                        id python:submenu['title'] + '_' + fromto;">
+                        tal:attributes="name python:submenu['id'] + '.query:record:list';
+                                        id python:submenu['id'] + '_' + fromto;">
                         <!--
                         <option value="1000-01-05T23:00:00Z" class="">
                             <label>
