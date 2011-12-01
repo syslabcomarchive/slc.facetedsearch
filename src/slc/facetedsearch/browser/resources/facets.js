@@ -31,22 +31,23 @@ var facets = (function () {
     function toggler(elem, headline) {
         var i = currentopen.indexOf(elem.attr('id'));
         if (i < 0) {
-            elem.show();
-            headline.addClass('open');
-            currentopen.push(elem.attr('id'));
-            } else {
-            elem.hide();
-            headline.removeClass('open');
-            currentopen.splice(i);
+                elem.show();
+                headline.addClass('open');
+                currentopen.push(elem.attr('id'));
+            } 
+            else {
+                elem.hide();
+                headline.removeClass('open');
+                currentopen.splice(i);
             }
-            }
-            return {
-currentopen: currentopen,
-show_min: show_min,
-show_num: show_num,
-show_step: show_step,
-toggler: toggler
-            };
+        }
+        return {
+            currentopen: currentopen,
+            show_min: show_min,
+            show_num: show_num,
+            show_step: show_step,
+            toggler: toggler
+        };
 }());
 
 var clicked_slider_handle = false;
@@ -61,7 +62,7 @@ jq(document).ready(function() {
             if (targ.nodeType == 3) // defeat Safari bug
             targ = targ.parentNode;
 
-            //if (!(targ.tagName = "DIV") {}
+        //if (!(targ.tagName = "DIV") {}
         topical.toggler(jq('.submenu_content#' + targ.id),
                 jq('.submenu_title#' + targ.id));
         });
