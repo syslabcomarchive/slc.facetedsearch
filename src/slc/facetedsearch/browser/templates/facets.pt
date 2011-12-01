@@ -116,7 +116,7 @@
                         -->
                     </select>
                 </tal:fromto>
-                <input type="hidden" tal:attributes="name python:submenu['title'] + '.range:record';" value="min:max" />
+                <input type="hidden" tal:attributes="name python:submenu['id'] + '.range:record';" value="min:max" />
             </tal:select>
 
               <div class="submenu_more" style="display: none">
@@ -125,8 +125,6 @@
               <div class="submenu_less" style="display: none">
                   <a i18n:translate="browsing_submenu_less">Show less...</a>
               </div>
-
-
             </fieldset>
             <div class="visualClear"></div>
           </tal:submenus>
