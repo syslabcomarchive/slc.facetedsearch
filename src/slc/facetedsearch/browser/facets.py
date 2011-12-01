@@ -194,25 +194,6 @@ class SearchFacetsView(BrowserView, FacetMixin):
                 parent=None, 
                 facettype=None):
         menu = []
-        #lower_bound = dict(id='1000-01-05T23:00:00Z', 
-        #                   title='Earlier', 
-        #                   isrange=True, 
-        #                   isstandard=False, 
-        #                   selected=False, 
-        #                   selected_from=False, 
-        #                   selected_to=False, 
-        #                   count=0, 
-        #                   content=[])
-        #upper_bound = dict(id='2499-12-30T23:00:00Z', 
-        #                   title='Later', 
-        #                   isrange=True, 
-        #                   isstandard=False, 
-        #                   selected=False, 
-        #                   selected_from=False, 
-        #                   selected_to=False, 
-        #                   count=0, 
-        #                   content=[])
-
         if not vocab and id == 'ROOT':
             vocab = self.vocDict
         if not counts and id == 'ROOT':
@@ -259,33 +240,30 @@ class SearchFacetsView(BrowserView, FacetMixin):
         selected = False
         selected_from = False
         selected_to = False
+        form = getattr(self.request, 'form', {})
         if parent not in [None, 'ROOT']:
-            facet_counts = getattr(self.results, 'facet_counts')
             if isrange:
-                date = self.request.get(parent, {}).get('query', [])
-                # XXX: When is query not a DateTime object?
-                if isinstance(date, DateTime):
+                date = form.get(parent, {}).get('query', [])
+                range = form.get(parent, {}).get('range')
+                if range == 'min':
                     date = date.HTML4()
-                    range = self.request.get(parent, {}).get('range')
-                    if range == 'min':
-                        selected = id > date
-                        selected_from = date == id
-                    elif range == 'max':
-                        selected = id < date
-                        selected_to = date == id
-                else:
-                    selected = id in date 
-                    selected_from = date and date[0] == id
-                    selected_to = date and date[1] == id
+                    selected = id > date
+                    selected_from = date == id
+                elif range == 'max':
+                    date = date.HTML4()
+                    selected = id < date
+                    selected_to = date == id
+                elif range == 'min:max' and date:
+                    # XXX: doublecheck this
+                    selected = id > date[0].HTML4() and id < date[1].HTML4()
+                    selected_from = date[0].HTML4() == id
+                    selected_to = date[1].HTML4() == id
             else:
-                count = facet_counts['facet_fields'][parent][id]
-                selected = False
-                if count:
-                    queried = self.request.get(parent)
-                    if queried == id:
-                        selected = True
-                    elif isinstance(queried, (list, tuple)) and id in queried:
-                        selected  = True
+                queried = form.get(parent)
+                if queried == id:
+                    selected = True
+                elif isinstance(queried, (list, tuple)) and id in queried:
+                    selected  = True
 
         return dict(id=id, 
                     title=title, 
