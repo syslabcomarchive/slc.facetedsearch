@@ -3,7 +3,6 @@ from logging import getLogger
 from string import strip
 
 from DateTime import DateTime
-from DateTime.interfaces import TimeError
 from ZTUtils import make_hidden_input
 
 from zope.component import queryUtility
@@ -159,7 +158,6 @@ class SearchFacetsView(BrowserView, FacetMixin):
                     content[value] = (self.getValueFriendlyName(field, value), None)
 
                 self.vocDict[field] = (self.getFieldFriendlyName(field), content)
-
         return super(SearchFacetsView, self).__call__(*args, **kw)
 
     def getFieldFriendlyName(self, field):
