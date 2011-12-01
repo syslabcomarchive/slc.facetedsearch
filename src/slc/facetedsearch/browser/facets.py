@@ -1,17 +1,20 @@
-from logging import getLogger
 from copy import deepcopy
+from logging import getLogger
 from string import strip
-from ZTUtils import make_hidden_input
+
 from DateTime import DateTime
 from DateTime.interfaces import TimeError
+from ZTUtils import make_hidden_input
 
 from zope.component import queryUtility
-from plone.app.layout.viewlets.common import SearchBoxViewlet
 
 from Products.Archetypes.interfaces import IVocabulary
 from Products.CMFCore.utils import getToolByName
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from Products.PluginIndexes.DateIndex.DateIndex import DateIndex
+
+from plone.app.layout.viewlets.common import SearchBoxViewlet
 
 from collective.solr.interfaces import ISolrConnectionConfig
 
@@ -115,8 +118,8 @@ class SearchFacetsView(BrowserView, FacetMixin):
         if not 'results' in self.kw or \
                     not hasattr(self.kw['results'], 'facet_counts'):
 
-            query = deepcopy(self.form)
             catalog = getToolByName(self.context, 'portal_catalog')
+            query = deepcopy(self.form)
             self.results = catalog(query)
             if not 'results' in self.kw:
                 self.kw['results'] = self.results
@@ -149,28 +152,29 @@ class SearchFacetsView(BrowserView, FacetMixin):
                 content = dict()
                 if before >= 0:
                     content[DATE_LOWERBOUND] = ('Before', None)
-                for value in field_values:
-                    content[value] = (self.getDisplayValue(value), None)
                 if after >= 0:
                     content[DATE_UPPERBOUND] = ('After', None)
-                self.vocDict[field] = (self.getDisplayValue(field), content)
+
+                for value in field_values:
+                    content[value] = (self.getValueFriendlyName(field, value), None)
+
+                self.vocDict[field] = (self.getFieldFriendlyName(field), content)
+
         return super(SearchFacetsView, self).__call__(*args, **kw)
 
-    def getDisplayValue(self, value):
-        try:
-            datetime = DateTime(value)
-            return datetime.strftime('%d.%m.%Y')
-        except DateTime.SyntaxError:
-            # so it's not a date, let's return it as-is for now
-            return value
-        except TimeError:
-            return value
+    def getFieldFriendlyName(self, field):
+        atct = getToolByName(self.context, 'portal_atct')
+        return atct.getIndex(field).friendlyName
 
-    def getResults(self):
-        return self.results or self.kw['results']
+    def getValueFriendlyName(self, field, value):
+        catalog = getToolByName(self.context, 'portal_catalog')
+        index = catalog._catalog.getIndex(field)
+        if isinstance(index, DateIndex):
+            return DateTime(value).strftime('%d.%m.%Y')
+        return value
 
     def getCounts(self):
-        res = self.getResults()
+        res = self.results or self.kw['results']
         if not hasattr(res, 'facet_counts'):
             return {}
         counts = res.facet_counts['facet_fields']
