@@ -15,7 +15,7 @@ from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
 from collective.solr.interfaces import ISolrConnectionConfig
 
-logger = getLogger('collective.solr.facets')
+log = getLogger(__name__)
 
 DATE_LOWERBOUND = '1000-01-05T23:00:00Z'
 DATE_UPPERBOUND = '2499-12-30T23:00:00Z'
@@ -64,7 +64,6 @@ def facetParameters(context, request):
                 dependencies=dependencies)
 
 
-
 class FacetMixin:
     """ mixin with helpers common to the viewlet and view """
 
@@ -80,7 +79,6 @@ class FacetMixin:
 
 
 class SearchBox(SearchBoxViewlet, FacetMixin):
-
     index = ViewPageTemplateFile('templates/searchbox.pt')
 
 
@@ -88,8 +86,10 @@ class SearchFacetsView(BrowserView, FacetMixin):
     """ view for displaying facetting info as provided by solr searches """
 
     def __init__(self, context, request):
-        self.facet_fields = facetParameters(context, request)['fields']
-        self.facet_types = facetParameters(context, request)['types']
+        pdict = facetParameters(context, request)
+        self.facet_fields = pdict['fields']
+        self.facet_types = pdict['types']
+
         standard = filter(lambda f: self.facet_types[f] == 'standard', self.facet_fields)
         ranges = filter(lambda f: self.facet_types[f] == 'range', self.facet_fields)
         self.default_query = {'facet': 'true',
@@ -101,16 +101,8 @@ class SearchFacetsView(BrowserView, FacetMixin):
                               'facet.range.other': 'all',
                              }
 
-        #self.vocDict['ddcPlace'] = voc.getVocabularyByName(
-        #    'region_values').getVocabularyDict(voc)
-        #self.vocDict['ddcTime'] = voc.getVocabularyByName(
-        #    'epoch_values').getVocabularyDict(voc)
-        #self.vocDict['ddcSubject'] = voc.getVocabularyByName(
-        #    'topic_values').getVocabularyDict(voc)
-
         self.submenus = [dict(title=field, id=field) for field in self.facet_fields]
         self.queryparam = 'fq'
-
         BrowserView.__init__(self, context, request)
 
 
@@ -119,36 +111,45 @@ class SearchFacetsView(BrowserView, FacetMixin):
         self.kw = kw
         self.form = deepcopy(self.default_query)
         self.form.update(deepcopy(self.request.form))
-        if not 'results' in self.kw or not hasattr(self.kw['results'], 'facet_counts'):
+
+        if not 'results' in self.kw or \
+                    not hasattr(self.kw['results'], 'facet_counts'):
+
             query = deepcopy(self.form)
             catalog = getToolByName(self.context, 'portal_catalog')
             self.results = catalog(query)
             if not 'results' in self.kw:
                 self.kw['results'] = self.results
+
         if not getattr(self, 'results', None):
             self.results = self.kw['results']
 
+        facet_counts = getattr(self.results, 'facet_counts', {})
         voctool = getToolByName(self.context, 'portal_vocabularies', None)
         self.vocDict = dict()
+
         for field in self.facet_fields:
             voc = voctool.getVocabularyByName(field)
             if IVocabulary.providedBy(voc):
-                self.vocDict[field] = (voc.Title(), voc.getVocabularyDict(self.context))
-            elif hasattr(self.results, 'facet_counts'): 
+                self.vocDict[field] = ( voc.Title(), 
+                                        voc.getVocabularyDict(self.context))
+            elif facet_counts: 
                 # we don't have a matching vocabulary, so we fake one
                 before = after = -1
-                if field in self.results.facet_counts['facet_fields']:
-                    container = self.results.facet_counts['facet_fields'][field]
-                elif field in self.results.facet_counts['facet_ranges']:
-                    container = self.results.facet_counts['facet_ranges'][field]['counts']
-                    before = self.results.facet_counts['facet_ranges'][field].get('before', -1)
-                    after = self.results.facet_counts['facet_ranges'][field].get('after', -1)
+                if field in facet_counts['facet_fields']:
+                    field_values = facet_counts['facet_fields'][field].keys()
+
+                elif field in facet_counts['facet_ranges']:
+                    field_values= facet_counts['facet_ranges'][field]['counts'].keys()
+                    before = facet_counts['facet_ranges'][field].get('before', -1)
+                    after = facet_counts['facet_ranges'][field].get('after', -1)
                 else:
                     continue
+
                 content = dict()
                 if before >= 0:
                     content[DATE_LOWERBOUND] = ('Before', None)
-                for value in container:
+                for value in field_values:
                     content[value] = (self.getDisplayValue(value), None)
                 if after >= 0:
                     content[DATE_UPPERBOUND] = ('After', None)
@@ -183,10 +184,33 @@ class SearchFacetsView(BrowserView, FacetMixin):
     def sortrange(self, submenu):
         return sorted(submenu, key=lambda x:x['id'], reverse=False)
 
-    def getMenu(self, id='ROOT', title=None, vocab={}, counts=None, parent=None, facettype=None):
+    def getMenu(self, 
+                id='ROOT', 
+                title=None, 
+                vocab={}, 
+                counts=None, 
+                parent=None, 
+                facettype=None):
         menu = []
-        #lower_bound = dict(id='1000-01-05T23:00:00Z', title='Earlier', isrange=True, isstandard=False, selected=False, selected_from=False, selected_to=False, count=0, content=[])
-        #upper_bound = dict(id='2499-12-30T23:00:00Z', title='Later', isrange=True, isstandard=False, selected=False, selected_from=False, selected_to=False, count=0, content=[])
+        #lower_bound = dict(id='1000-01-05T23:00:00Z', 
+        #                   title='Earlier', 
+        #                   isrange=True, 
+        #                   isstandard=False, 
+        #                   selected=False, 
+        #                   selected_from=False, 
+        #                   selected_to=False, 
+        #                   count=0, 
+        #                   content=[])
+        #upper_bound = dict(id='2499-12-30T23:00:00Z', 
+        #                   title='Later', 
+        #                   isrange=True, 
+        #                   isstandard=False, 
+        #                   selected=False, 
+        #                   selected_from=False, 
+        #                   selected_to=False, 
+        #                   count=0, 
+        #                   content=[])
+
         if not vocab and id == 'ROOT':
             vocab = self.vocDict
         if not counts and id == 'ROOT':
@@ -225,19 +249,42 @@ class SearchFacetsView(BrowserView, FacetMixin):
             #    menu = [lower_bound] + menu + [upper_bound]
             else:
                 menu = self.sort(menu)
+
             if isrange and not filter(lambda item: item['selected'], menu):
                 menu[0]['selected_from'] = True
                 menu[-1]['selected_to'] = True
 
-        if isrange:
-            fromto = self.request.form.get(parent, {}).get('query', [])
-            selected = id in fromto
-            selected_from = fromto and fromto[0] == id
-            selected_to = fromto and fromto[1] == id
-        else:
-            selected = self.request.form.get(parent, None) == id
-            selected_from = False
-            selected_to = False
+        selected = False
+        selected_from = False
+        selected_to = False
+        if parent not in [None, 'ROOT']:
+            facet_counts = getattr(self.results, 'facet_counts')
+            if isrange:
+                date = self.request.get(parent, {}).get('query', [])
+                # XXX: When is query not a DateTime object?
+                if isinstance(date, DateTime):
+                    date = date.HTML4()
+                    range = self.request.get(parent, {}).get('range')
+                    if range == 'min':
+                        selected = id > date
+                        selected_from = date == id
+                    elif range == 'max':
+                        selected = id < date
+                        selected_to = date == id
+                else:
+                    selected = id in date 
+                    selected_from = date and date[0] == id
+                    selected_to = date and date[1] == id
+            else:
+                count = facet_counts['facet_fields'][parent][id]
+                selected = False
+                if count:
+                    queried = self.request.get(parent)
+                    if queried == id:
+                        selected = True
+                    elif isinstance(queried, (list, tuple)) and id in queried:
+                        selected  = True
+
         return dict(id=id, 
                     title=title, 
                     isrange=isrange, 
