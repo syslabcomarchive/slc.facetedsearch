@@ -31,7 +31,7 @@
                            tal:attributes="class python:item['selected'] and 'selected_facet' or '';
                                            checked python:item['selected'] and 'checked' or '';
                                            value item/id;
-                                           name submenu/title;" />
+                                           name submenu/id;" />
                         <label>
                           <tal:title tal:replace="item/title"/>
                         </label>
