@@ -2,13 +2,13 @@
      i18n:domain="plone"
      tal:condition="view/getCounts">
 
-  <h4 i18n:translate="heading_search_facets">
-    Limit search results...
-  </h4>
+    <h4 i18n:translate="heading_search_facets">
+        Limit search results...
+    </h4>
 
-        <form id="browsing-menu" action="search" method="post"
-              tal:define="menu view/getMenu;">
-          <tal:submenus repeat="submenu menu/content">
+    <form id="browsing-menu" action="search" method="post"
+          tal:define="menu view/getMenu;">
+        <tal:submenus repeat="submenu menu/content">
             <fieldset class="submenu widget-fieldset"
                  tal:attributes="id python:'submenu_' + submenu['id'];">
               <legend class="menu_headline"
@@ -18,8 +18,7 @@
 
               <div class="visualClear"><!-- --></div>
 
-            <tal:checkbox
-               tal:condition="submenu/isstandard">
+            <tal:checkbox tal:condition="submenu/isstandard">
               <div class="submenu-content">
                 <tal:repeat repeat="item submenu/content">
                     <div class="submenu-lvl2"
@@ -133,7 +132,5 @@
           </tal:submenus>
           <tal:others replace="structure view/getHiddenFields" />
           <input type="submit" value="Submit" />
-        </form>
-
-
+    </form>
 </div>
