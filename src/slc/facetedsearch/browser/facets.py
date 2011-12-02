@@ -1,11 +1,10 @@
 from copy import deepcopy
 from logging import getLogger
-from string import strip
 
 from DateTime import DateTime
 from ZTUtils import make_hidden_input
 
-from zope.component import queryUtility
+from zope.component import getMultiAdapter
 
 from Products.Archetypes.interfaces import IVocabulary
 from Products.CMFCore.utils import getToolByName
@@ -15,52 +14,34 @@ from Products.PluginIndexes.DateIndex.DateIndex import DateIndex
 
 from plone.app.layout.viewlets.common import SearchBoxViewlet
 
-from collective.solr.interfaces import ISolrConnectionConfig
+from collective.solr.browser import facets 
+
+from slc.facetedsearch.interfaces import IDefaultRangesGetter
 
 log = getLogger(__name__)
 
 DATE_LOWERBOUND = '1000-01-05T23:00:00Z'
 DATE_UPPERBOUND = '2499-12-30T23:00:00Z'
 
-def param(view, name):
-    """ return a request parameter as a list """
-    value = view.request.form.get(name, [])
-    if isinstance(value, basestring):
-        value = [value]
-    return value
-
-
 def facetParameters(context, request):
     """ determine facet fields to be queried for """
     marker = []
-    fields = request.get('facet.field', request.get('facet_field', marker))
+    fields, dependencies = facets.facetParameters(context, request)
     ranges = request.get('facet.range', request.get('facet_range', marker))
-    if isinstance(fields, basestring):
-        fields = [fields]
-    if fields is marker:
-        fields = getattr(context, 'facet_fields', marker)
-    if fields is marker:
-        config = queryUtility(ISolrConnectionConfig)
-        if config is not None:
-            fields = config.facets
     if isinstance(ranges, basestring):
         ranges = [ranges]
     if ranges is marker:
         ranges = getattr(context, 'facet_ranges', marker)
     if ranges is marker:
-        config = queryUtility(ISolrConnectionConfig)
-        if config is not None:
-            ranges = ['Date', 'expires', 'modified'] #config.facetranges
+        adapter = getMultiAdapter((context,), IDefaultRangesGetter)
+        ranges = adapter.getDefaultRanges()
+        
     types = dict()
     for f in fields:
         types.update({f:'standard'})
     for r in ranges:
         types.update({r:'range'})
-    dependencies = {}
-    for idx, field in enumerate(fields):
-        if ':' in field:
-            facet, dep = map(strip, field['name'].split(':', 1))
-            dependencies[facet] = map(strip, dep.split(','))
+
     return dict(fields=tuple(fields) + tuple(ranges), 
                 types=types, 
                 dependencies=dependencies)
@@ -68,16 +49,15 @@ def facetParameters(context, request):
 
 class FacetMixin:
     """ mixin with helpers common to the viewlet and view """
-
     hidden = ViewPageTemplateFile('templates/hiddenfields.pt')
 
     def hiddenfields(self):
         """ render hidden fields suitable for inclusion in search forms """
         facet_params = facetParameters(self.context, self.request)
-        queries = param(self, 'fq')
-        facets = filter(lambda f: facet_params['types'][f] == 'standard', facet_params['fields'])
+        queries = facets.param(self, 'fq')
+        fields = filter(lambda f: facet_params['types'][f] == 'standard', facet_params['fields'])
         ranges = filter(lambda f: facet_params['types'][f] == 'range', facet_params['fields'])
-        return self.hidden(facets=facets, ranges=ranges, queries=queries)
+        return self.hidden(facets=fields, ranges=ranges, queries=queries)
 
 
 class SearchBox(SearchBoxViewlet, FacetMixin):
@@ -95,13 +75,14 @@ class SearchFacetsView(BrowserView, FacetMixin):
         standard = filter(lambda f: self.facet_types[f] == 'standard', self.facet_fields)
         ranges = filter(lambda f: self.facet_types[f] == 'range', self.facet_fields)
         self.default_query = {'facet': 'true',
-                              'facet.field': standard,
+                              'facet.field': standard }
+        if ranges:
+            self.default_query.update({
                               'facet.range': ranges, 
                               'facet.range.start': 'NOW/DAY-6MONTHS',
                               'facet.range.end': 'NOW/DAY', 
                               'facet.range.gap': '+7DAYS',
-                              'facet.range.other': 'all',
-                             }
+                              'facet.range.other': 'all', })
 
         self.submenus = [dict(title=field, id=field) for field in self.facet_fields]
         self.queryparam = 'fq'

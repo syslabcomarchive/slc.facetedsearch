@@ -22,4 +22,9 @@
       provides="Products.GenericSetup.interfaces.EXTENSION"
       />
 
+    <adapter
+        for="*"
+        provides=".interfaces.IDefaultRangesGetter"
+        factory=".adapters.DefaultRangesGetter" />
+
 </configure>
