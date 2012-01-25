@@ -12,3 +12,7 @@
 <input type="hidden" name="fq"
        tal:repeat="fq options/queries"
        tal:attributes="value fq" />
+<input type="hidden"
+       tal:repeat="item options/other"
+       tal:attributes="name item/name;
+                       value item/value" />

@@ -18,5 +18,5 @@ class DefaultRangesGetter(object):
         config = queryUtility(ISolrConnectionConfig)
         if config is not None:
             # FIXME: the ranges must be configurable on the config...
-            ranges = ['Date', 'expires', 'modified'] #config.facetranges
+            ranges = ['created', 'expires', 'modified'] #config.facetranges
             return ranges

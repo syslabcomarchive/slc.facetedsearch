@@ -143,7 +143,7 @@ jq(document).ready(function() {
 
     // get ourselves some fancy sliders
     jq('fieldset.submenu:has(select.facet_range)').each(function(index, element) {
-        jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text', labels: 7 }).hide();
+        jq(element).find('select.facet_range').selectToUISlider({ labelSrc: 'text', labels: 7, tooltip: false }).hide();
     });
 
     // do an ajax update when a form element is changed
