@@ -36,6 +36,9 @@ def facetParameters(context, request):
         adapter = getMultiAdapter((context,), IDefaultRangesGetter)
         ranges = adapter.getDefaultRanges()
         
+    if fields is None and ranges is None:
+        return dict(fields=(), types={}, dependencies=dependencies)
+
     types = dict()
     for f in fields:
         types.update({f:'standard'})
