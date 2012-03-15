@@ -154,6 +154,7 @@ class SearchFacetsView(BrowserView, FacetMixin):
 
     def getValueFriendlyName(self, field, value):
         catalog = getToolByName(self.context, 'portal_catalog')
+        #FIXME: this should be done in a solr compatible way
         index = catalog._catalog.getIndex(field)
         if isinstance(index, DateIndex):
             return DateTime(value).strftime('%d.%m.%Y')
@@ -180,7 +181,8 @@ class SearchFacetsView(BrowserView, FacetMixin):
                 vocab={}, 
                 counts=None, 
                 parent=None, 
-                facettype=None):
+                facettype=None,
+                sortkey=None):
         menu = []
         if not vocab and id == 'ROOT':
             vocab = self.vocDict
@@ -215,11 +217,14 @@ class SearchFacetsView(BrowserView, FacetMixin):
                                     parent=id, 
                                     facettype=facettype)
                 menu.append(submenu)
-            if isrange:
-                menu = self.sortrange(menu)
-            #    menu = [lower_bound] + menu + [upper_bound]
+            if sortkey:
+                menu = sorted(menu, key=sortkey)
             else:
-                menu = self.sort(menu)
+                if isrange:
+                    menu = self.sortrange(menu)
+                #    menu = [lower_bound] + menu + [upper_bound]
+                else:
+                    menu = self.sort(menu)
 
             if isrange and not filter(lambda item: item['selected_from'], menu):
                 menu[0]['selected_from'] = True
