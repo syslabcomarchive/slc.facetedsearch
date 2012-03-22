@@ -119,7 +119,9 @@ class SearchFacetsView(BrowserView, FacetMixin):
         self.vocDict = dict()
 
         for field in self.facet_fields:
-            voc = voctool.getVocabularyByName(field)
+            voc = {}
+            if voctool:
+                voc = voctool.getVocabularyByName(field)
             if IVocabulary.providedBy(voc):
                 self.vocDict[field] = ( voc.Title(), 
                                         voc.getVocabularyDict(self.context))
