@@ -4,7 +4,7 @@ from logging import getLogger
 from DateTime import DateTime
 from ZTUtils import make_hidden_input
 
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 
 from Products.Archetypes.interfaces import IVocabulary
 from Products.CMFCore.utils import getToolByName
@@ -15,13 +15,14 @@ from Products.PluginIndexes.DateIndex.DateIndex import DateIndex
 from plone.app.layout.viewlets.common import SearchBoxViewlet
 
 from collective.solr.browser import facets 
-
-from slc.facetedsearch.interfaces import IDefaultRangesGetter
+from collective.solr.interfaces import ISolrConnectionManager, ISolrConnectionConfig
 
 log = getLogger(__name__)
 
 DATE_LOWERBOUND = '1000-01-01T00:00:00Z'
 DATE_UPPERBOUND = '2499-12-31T23:59:59Z'
+
+RANGE_TYPES = ['float', 'long', 'double', 'date']
 
 def facetParameters(context, request):
     """ determine facet fields to be queried for """
@@ -33,13 +34,18 @@ def facetParameters(context, request):
     if ranges is marker:
         ranges = getattr(context, 'facet_ranges', marker)
     if ranges is marker:
-        adapter = getMultiAdapter((context,), IDefaultRangesGetter)
-        ranges = adapter.getDefaultRanges()
+        ranges = []
         
     if fields is None:
         fields = []
-    if ranges is None:
-        ranges = []
+
+    mgr = getUtility(ISolrConnectionManager)
+    schema = mgr.getSchema()
+    for field in fields:
+        if schema[field]['type'] in RANGE_TYPES:
+            fields.remove(field)
+            if field not in ranges:
+                ranges.append(field)
 
     types = dict()
     for f in fields:
@@ -152,13 +158,14 @@ class SearchFacetsView(BrowserView, FacetMixin):
 
     def getFieldFriendlyName(self, field):
         atct = getToolByName(self.context, 'portal_atct')
-        return atct.getIndex(field).friendlyName
+        if field in atct.getIndexes():
+            return atct.getIndex(field).friendlyName
+        else:
+            return field
 
     def getValueFriendlyName(self, field, value):
-        catalog = getToolByName(self.context, 'portal_catalog')
-        #FIXME: this should be done in a solr compatible way
-        index = catalog._catalog.getIndex(field)
-        if isinstance(index, DateIndex):
+        solr_conn = getUtility(ISolrConnectionManager)
+        if solr_conn.getSchema()[field]['type'] == 'date':
             return DateTime(value).strftime('%d.%m.%Y')
         return value
 

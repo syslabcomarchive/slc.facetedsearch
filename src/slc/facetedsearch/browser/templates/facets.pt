@@ -32,7 +32,7 @@
                                            checked python:item['selected'] and 'checked' or '';
                                            value item/id;
                                            id item/id;
-                                           name submenu/id;" />
+                                           name string:${submenu/id}:list;" />
                         <label tal:attributes="for item/id">
                           <tal:title tal:replace="item/title"/>
                         </label>
