@@ -87,7 +87,8 @@ class SearchFacetsView(BrowserView, FacetMixin):
         standard = filter(lambda f: self.facet_types[f] == 'standard', self.facet_fields)
         ranges = filter(lambda f: self.facet_types[f] == 'range', self.facet_fields)
         self.default_query = {'facet': 'true',
-                              'facet.field': standard }
+                              'facet.field': standard,
+                              'b_size': 10}
         if ranges:
             # TODO: need config for these values
             self.default_query.update({
