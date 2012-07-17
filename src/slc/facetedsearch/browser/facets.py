@@ -4,18 +4,16 @@ from logging import getLogger
 from DateTime import DateTime
 from ZTUtils import make_hidden_input
 
-from zope.component import getMultiAdapter, getUtility
+from zope import component 
+from zope.schema.interfaces import IVocabularyFactory
 
 from Products.Archetypes.interfaces import IVocabulary
 from Products.CMFCore.utils import getToolByName
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
-from Products.PluginIndexes.DateIndex.DateIndex import DateIndex
-
-from plone.app.layout.viewlets.common import SearchBoxViewlet
 
 from collective.solr.browser import facets 
-from collective.solr.interfaces import ISolrConnectionManager, ISolrConnectionConfig
+from collective.solr.interfaces import ISolrConnectionManager
 
 log = getLogger(__name__)
 
@@ -39,7 +37,7 @@ def facetParameters(context, request):
     if fields is None:
         fields = []
 
-    mgr = getUtility(ISolrConnectionManager)
+    mgr = component.getUtility(ISolrConnectionManager)
     schema = mgr.getSchema()
     for field in fields:
         if schema[field]['type'] in RANGE_TYPES:
@@ -71,10 +69,6 @@ class FacetMixin:
         return self.hidden(facets=fields, ranges=ranges, queries=queries, other=[])
 
 
-class SearchBox(SearchBoxViewlet, FacetMixin):
-    index = ViewPageTemplateFile('templates/searchbox.pt')
-
-
 class SearchFacetsView(BrowserView, FacetMixin):
     """ view for displaying facetting info as provided by solr searches """
 
@@ -83,6 +77,11 @@ class SearchFacetsView(BrowserView, FacetMixin):
         self.facet_fields = pdict['fields']
         self.facet_types = pdict['types']
         self.facet_range_gap = 7 # days
+
+        self.friendly_type_names = \
+                    component.queryUtility(
+                        IVocabularyFactory, 
+                        name=u'plone.app.vocabularies.ReallyUserFriendlyTypes')(self)
 
         standard = filter(lambda f: self.facet_types[f] == 'standard', self.facet_fields)
         ranges = filter(lambda f: self.facet_types[f] == 'range', self.facet_fields)
@@ -103,23 +102,13 @@ class SearchFacetsView(BrowserView, FacetMixin):
         BrowserView.__init__(self, context, request)
 
 
-    def __call__(self, *args, **kw):
-        self.args = args
-        self.kw = kw
+    def __call__(self):
         self.form = deepcopy(self.default_query)
         self.form.update(deepcopy(self.request.form))
 
-        if not 'results' in self.kw or \
-                    not hasattr(self.kw['results'], 'facet_counts'):
-
-            catalog = getToolByName(self.context, 'portal_catalog')
-            query = deepcopy(self.form)
-            self.results = catalog(query)
-            if not 'results' in self.kw:
-                self.kw['results'] = self.results
-
-        if not getattr(self, 'results', None):
-            self.results = self.kw['results']
+        catalog = getToolByName(self.context, 'portal_catalog')
+        query = deepcopy(self.form)
+        self.results = catalog(query)
 
         facet_counts = getattr(self.results, 'facet_counts', {})
         voctool = getToolByName(self.context, 'portal_vocabularies', None)
@@ -152,26 +141,31 @@ class SearchFacetsView(BrowserView, FacetMixin):
                     content[DATE_UPPERBOUND] = ('After', None)
 
                 for value in field_values:
-                    content[value] = (self.getValueFriendlyName(field, value), None)
+                    content[value] = (self.getFriendlyValue(field, value), None)
 
-                self.vocDict[field] = (self.getFieldFriendlyName(field), content)
-        return super(SearchFacetsView, self).__call__(*args, **kw)
+                self.vocDict[field] = (self.getFriendlyFieldName(field), content)
 
-    def getFieldFriendlyName(self, field):
+    def getFriendlyTypeName(self, typename):
+        try:
+            return self.friendly_type_names.getTermByToken(typename).title
+        except LookupError:
+            return typename
+
+    def getFriendlyFieldName(self, fieldname):
         atct = getToolByName(self.context, 'portal_atct')
-        if field in atct.getIndexes():
-            return atct.getIndex(field).friendlyName
+        if fieldname in atct.getIndexes():
+            return atct.getIndex(fieldname).friendlyName
         else:
-            return field
+            return fieldname
 
-    def getValueFriendlyName(self, field, value):
-        solr_conn = getUtility(ISolrConnectionManager)
+    def getFriendlyValue(self, field, value):
+        solr_conn = component.getUtility(ISolrConnectionManager)
         if solr_conn.getSchema()[field]['type'] == 'date':
             return DateTime(value).strftime('%d.%m.%Y')
         return value
 
     def getCounts(self):
-        res = self.results or self.kw['results']
+        res = self.results
         if not hasattr(res, 'facet_counts'):
             return {}
         counts = res.facet_counts['facet_fields']
@@ -191,7 +185,7 @@ class SearchFacetsView(BrowserView, FacetMixin):
                 vocab={}, 
                 counts=None, 
                 parent=None, 
-                facettype=None,
+                facettype=None, 
                 sortkey=None):
         menu = []
         if not vocab and id == 'ROOT':
@@ -232,7 +226,6 @@ class SearchFacetsView(BrowserView, FacetMixin):
             else:
                 if isrange:
                     menu = self.sortrange(menu)
-                #    menu = [lower_bound] + menu + [upper_bound]
                 else:
                     menu = self.sort(menu)
 
@@ -311,10 +304,5 @@ class SearchFacetsView(BrowserView, FacetMixin):
         return not filter(lambda x: x.has_key('clearquery'), submenu) == []
 
     def getHiddenFields(self):
-        #facets=self.form.get('facet.field', [])
-        #ranges=self.form.get('facet.range', [])
-        #queries=[]
-        #other=[{'name': x, 'value': self.form[x]} for x in self.form if not 'facet' in x and not x in self.facet_fields]
-        #return self.hidden(facets=facets, ranges=ranges, queries=queries, other=other)
         return make_hidden_input([x for x in self.form.items() if x[0] not in self.facet_fields and not 'facet' in x[0] and not '_usage' in x[0]])
 
